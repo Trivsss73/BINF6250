@@ -22,118 +22,56 @@ closer to how this algorithm actually gets used in practice, and we are still wo
 on getting it to converge properly. More on that in the Struggles section.
 
 # Pseudocode
-The main driver is one function (GibbsMotifFinder) that runs the convergence loop.
-We broke the smaller operations into their own helper functions so we could test
-each piece on its own before plugging them into the loop.
+The whole algorithm sits in one function, GibbsMotifFinder. We kept it as a single
+block that follows the professor's lecture pseudocode top to bottom, rather than
+splitting it into helpers. The three main pieces are initialization, the iteration
+loop, and the convergence check.
 ```
-GibbsMotifFinder(seqs, k, seed, max_iter, required_streak, tol, min_iter):
+GibbsMotifFinder (seqs, k, seed):
     Inputs:
       seqs - list of DNA strings
       k - motif width
-      seed - random seed for reproducibility
-      max_iter - hard cap on iterations
-      required_streak - how many stable iterations before calling it converged
-      tol - how small the IC change has to be to count as stable
-      min_iter - floor on iterations before convergence can trigger
+      seed - random seed for reproducibility (default None)
     Output:
       final PFM (4 x k numpy array)
 
-    1. Seed the random generators.
-    2. Guard: if any sequence is shorter than k, bail out with an error.
-    3. Initialize motifs, strands, and positions by calling init_motifs.
-    4. Set up the convergence tracking state (streak = 0, previous_ic = None).
-    5. Loop up to max_iter times:
-        a. Pick one random sequence index i to be the holdout for this round.
-        b. Build a list of every motif except motifs[i].
-        c. Build a PWM from that list using init_pwm.
-        d. Slide across the full-length seqs[i] and score every candidate k-mer
-           on both strands using slide_and_score.
-        e. Sample a new motif, strand, and position from the score distribution
-           using sample_new_motif.
-        f. Replace motifs[i], strands[i], positions[i] with the new picks.
-        g. Rebuild the full PFM, compute IC, and update the convergence streak.
-        h. If the streak hit required_streak AND we are past min_iter, break.
-    6. Return the final PFM built from the current motifs.
+    1. Seed the random number generators.
+    2. Guard: if any sequence is shorter than k, raise an error. Also uppercase
+       every sequence so case does not break the scoring step.
 
-
-init_motifs (seqs, k, rng):
-    Inputs:
-      seqs - list of DNA strings
-      k - motif width
-      rng - numpy random generator
-    Output:
-      motifs, strands, positions - three parallel lists, one entry per sequence
-
-    1. For each sequence:
+    Initialization:
+    3. For each sequence:
         a. Pick a random start position that still leaves room for a k-mer.
-        b. Extract the k-mer at that position.
-        c. Flip a coin for the strand. If reverse, replace the k-mer with its
-           reverse complement and label it 'R'. Otherwise label it 'F'.
-    2. Return the three lists.
+        b. Append that k-mer to the motifs list.
+    4. Set up convergence tracking (streak = 0, information_content = None,
+       required_streak = 100 as noted in the lecture).
 
+    Iteration loop (up to 10,000 times):
+    5. For j in range(10000):
+        a. Pick a random sequence index i to be the holdout for this round.
+        b. Build a list of every motif except motifs[i].
+        c. Build a PFM then a PWM from that list.
+        d. Pull out every forward k-mer at every valid start position in seqs[i].
+        e. Build the matching reverse complement for each forward k-mer.
+        f. Concatenate forward and reverse k-mers into one combined list
+           (forward_kmers + reverse_kmers), so no scores get collapsed with max.
+        g. Score every k-mer in the combined list against the PWM.
+        h. Convert the log2-odds scores to probabilities by exponentiating with
+           base 2 (2 ** score), then normalize so they sum to 1.
+        i. Sample one index from the probability distribution using a weighted draw.
+        j. Replace motifs[i] with the k-mer at the sampled index (already
+           reverse-complemented if it came from the reverse half).
+        k. Rebuild the full PFM and compute the current IC.
+        l. Print the IC every 500 iterations so we can watch the chain climb.
 
-init_pwm (other_motifs, k):
-    Inputs:
-      other_motifs - the k-mers from every sequence except the holdout
-      k - motif width
-    Output:
-      pwm - 4 x k log2 odds matrix
+    Convergence check:
+    6. If this is not the first iteration and the current IC is within 0.001 bits
+       of the previous iteration's IC (np.isclose with atol=1e-3), bump the streak
+       up by one. Otherwise reset the streak to zero.
+    7. If the streak has reached required_streak (100), break out of the loop.
+    8. Save the current IC as the previous_ic for the next round.
 
-    1. Build a PFM from other_motifs.
-    2. Convert it to a PWM.
-    3. Return the PWM.
-
-
-slide_and_score (holdout_seq, pwm, k):
-    Inputs:
-      holdout_seq - the full-length sequence we are scoring
-      pwm - the PWM to score against
-      k - motif width
-    Output:
-      scores and strand_labels - two parallel lists, interleaved F and R per position
-
-    1. For each valid start position in the holdout sequence:
-        a. Pull out the forward k-mer and its reverse complement.
-        b. Score both against the PWM.
-        c. Append the forward score and 'F', then the reverse score and 'R',
-           so position p lands at indices 2p and 2p+1.
-    2. Return the two lists.
-
-
-sample_new_motif (scores, strand_labels, holdout_seq, k, rng):
-    Inputs:
-      scores - the full interleaved F/R score list
-      strand_labels - matching strand labels
-      holdout_seq - the sequence we are sampling from
-      k - motif width
-      rng - numpy random generator
-    Output:
-      the new k-mer, its strand, and its position in the holdout
-
-    1. Convert the scores to probabilities. Since the PWM is in log2 space, we
-       exponentiate with base 2 (2 ** score), then normalize so they sum to 1.
-    2. Pick one index from the probability distribution using a weighted draw.
-    3. Recover the position (idx // 2) and the strand (strand_labels at idx).
-    4. Extract the k-mer at that position from the holdout sequence.
-    5. If the strand is 'R', reverse complement the k-mer.
-    6. Return the k-mer, strand, and position.
-
-
-check_convergence (current_ic, previous_ic, streak, required_streak, tol):
-    Inputs:
-      current_ic - IC after this iteration
-      previous_ic - IC from the last iteration, or None on the first call
-      streak - current streak count going in
-      required_streak - how long the streak has to be before we call it converged
-      tol - how small the IC change has to be to count as stable
-    Output:
-      updated streak and a converged flag (True / False)
-
-    1. If this is the first iteration (previous_ic is None), reset streak to 0
-       and return False.
-    2. If the IC change is smaller than tol, bump the streak up by one.
-    3. Otherwise, reset the streak to zero.
-    4. Return the streak and whether it has hit required_streak.
+    9. Return the final PFM built from the final motifs list.
 
 ```
 
@@ -207,6 +145,8 @@ sampled index. And it was easy to forget that the holdout sequence being scored 
 the full-length seqs[i], not the k-mer motifs[i] we had been tracking in the main
 state.
 
+Towards the end we struggled with Github as a team, once we accepted the changes, the pull request automatically closed, we would love inputs on how to fix or deal with this.
+
 # Personal Reflections
 ## Group Leader
 Dhaivat - Leading this project for the first time was a big learning curve. Early
@@ -258,3 +198,17 @@ Mara: This was quite a difficult project, with many new concepts to understand b
 Claude Opus 4.7 was used to understand the algorithm, break it down in parts and undestand how it
 applies to MOTIF finding. It was also used to understand the possible ways to deal with 
 convergence. Lastly to create debugging code to make sure the functions are working as designed. 
+
+Prompt: Given the pseudocode, provide step by step how I can approach the technical coding.
+Output: Claude provided explanation and reasoning on how to construct the code without giving the answers.
+Reasoning: With the complexity of this project, I wanted to create a clear step-by-step process on how to improve my technical coding experience and have an organized to-do list.
+ 
+Prompt: Given the code, provide feedback on how to debug the following errors.
+Output: Claude provided reasonings to my errors, such as Value Errors and Import Errors (because I forgot to run the import block first).
+Reasoning: In one of my courses, it was mentioned that after about 20 minutes of struggling with debugging, it is okay to ask generative AI to assist. Here, I was struggling a bit, just for a few simple fixes to my code.  
+
+Prompt: I am working on a Gibb's Sampling project, I am required to develop the algorithm from scratch but first I would like to understand it first. How this algorithm is used in bioinformatics. explain the algorithm clearly, not using too much technical jargon.
+Output: Claude explained the algorithm, the stats behind it, how it applies to bioinformatics. 
+
+Prompt: Explained the output of the project, gave a draft pseudocode and asked for improvements, point out the gaps in understanding and workflow. 
+Output: gave its opinions on what works and why?, what would not work? and gave possible ways to tryout.
