@@ -1,4 +1,5 @@
 # Introduction
+Gibb's Sampling is a combined Monte Carlo and Markov Chain approach that is useful for motif finding. The approach for motif finding is broken down into three components: initiation, iteration and convergence. We implemented the three components into one function ```GibbsMotifFinder()``` in conjunction with the Driver Program code given to us to produce a plot for the final motif Position Frequency Matrix (PFM). Following the skeleton code, we attempted to construct a code for the ChIP-seq data provided. 
 This project introduces Gibbs sampling, a Markov Chain Monte Carlo (MCMC) method
 used to discover a shared motif across a set of DNA sequences. The idea is to start
 from random motif positions, hold out one sequence at a time, build a position weight
@@ -26,6 +27,35 @@ The main driver is one function (GibbsMotifFinder) that runs the convergence loo
 We broke the smaller operations into their own helper functions so we could test
 each piece on its own before plugging them into the loop.
 ```
+Notes:
+*length of k cannot be longer than the sequence itself
+*Pseudocount is established in def build_pwm()
+*score the kmer against both forward and reverse complement, and store both separately
+
+Initialization:
+For each sequence, pick a random start, extract the kmer, and store as initial motif array
+
+Loop body:
+Pick random index i (this is holding out)
+build PWM using N-1 motifs (exclude i)
+    we get these from previous motifs
+use this PWM to go back through the sequences for a new motif using forward and reverse complement
+Getting the probabilities:
+    currently in log from build pwm, convert back to probabilities
+        (* log can be negative, cant have negative probabilities
+         * We need probabilities because we are trying to normalize the scores to get the distribution)
+    normalizing all the forward and reverse complement scores for each valid position in sequences
+replace motifs object with this new sampling for each iteration, maintain strand identity
+
+Convergence:
+Use allclose to check convergence for scores from PWM, checking every iteration with a cap of 10,000 if no convergence, storing this round to compare to next round
+    #From prof: "until IC doesn't change"
+
+(end loop)
+Build final PFM from array
+
+
+'''
 GibbsMotifFinder(seqs, k, seed, max_iter, required_streak, tol, min_iter):
     Inputs:
       seqs - list of DNA strings
