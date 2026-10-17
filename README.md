@@ -8,10 +8,10 @@ Our program does this in three steps:
 2. **Find the best score:** keep track of the highest score in the matrix and where it is.
 3. **Trace back:** start at the highest score and follow the recorded moves backward until reachingg a cell whose move is END (a score of 0). Each move adds one column to the alignment.
 
-
 Match score, mismatch penalty, and gap penalty can all be changed.\
 The defaults are match = +1, mismatch = −1, gap = −1.\
 We tested the program on the two example pairs of DNA sequences provided in the notebook. There is no external data set.
+=>>>>. add 1 more example for RNA and 1 example for protein.
 
 ## Pertinent documentation and usage write-up
 ### Requirements
@@ -88,6 +88,8 @@ def smith_waterman(seq1, seq2, match = 1, mismatch = -1, gap = -1):
         for j from 1 to len(seq2):
             score_matrix[i][j], traceback_matrix[i][j] = cal_score(score_matrix, seq1, seq2, i, j, match, mismatch, gap)
             if score_matrix[i][j] > best_score:
+=>>>>>>>>>> Marcus said using random instead of 1st pick !!!!!!!
+
                 best_score = score_matrix[i][j]
                 best_position = (i, j)
     # Call on traceback function to get aligned seq 1 and 2
