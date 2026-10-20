@@ -65,6 +65,7 @@ ACATTA
 Only one cell has the top score, so the result is the same every run. 
 - For this test, we added alignment where match score equal 2 and gap equal = -2 while letting g mismatch stay -1.
 => result here is also as expected: aligned sequences, different score.
+
 **Test 2: DNA**
 - Input provided: seq3 = `GGGGAAAAAAAAAAAACCCC` vs seq4 = `GGGGAAAAAACCCC` 
 - Results: see notebook, expected. Two different cells tie for the top score of 10. Both are equally valid local alignments. Our run randomly picked (20, 14). Running with a fixed seed is would make the pick repeatable.
