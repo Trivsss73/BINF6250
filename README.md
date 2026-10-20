@@ -63,11 +63,11 @@ ACATTA
  [0 0 0 0 0 0 1 3 3]]
 ```
 Only one cell has the top score, so the result is the same every run. 
-- For this test, we added alignment where match/mismatch score equal 2 and gap equal = -2
+- For this test, we added alignment where match score equal 2 and gap equal = -2 while letting g mismatch stay -1.
 => result here is also as expected: aligned sequences, different score.
 **Test 2: DNA**
 - Input provided: seq3 = `GGGGAAAAAAAAAAAACCCC` vs seq4 = `GGGGAAAAAACCCC` 
-- Results: see notebook, expected. Two different cells tie for the top score of 10. Both are equally valid local alignments. Our run randomly picked (10, 10). Running with a fixed seed is would make the pick repeatable.
+- Results: see notebook, expected. Two different cells tie for the top score of 10. Both are equally valid local alignments. Our run randomly picked (20, 14). Running with a fixed seed is would make the pick repeatable.
 
 **Test 3: RNA**
 - Input (made-up test sequences):seq5 = `AUGGCUAGCA` vs seq6 = `GCUAGCAUGG`
@@ -75,7 +75,7 @@ Only one cell has the top score, so the result is the same every run.
 
 **Test 4: Protein example**
 - Input (Durbin et al., Biological Sequence Analysis) :seq7 = `HEAGAWGHEE` vs seq8 = `PAWHEAE`
-- Results: see notebook, three different local alignments tie at the top score of 3. The assumptions is all are equally valid local alignments. Our run randomly picked (10, 10). Running with a fixed seed is would make the pick repeatable.
+- Results: see notebook, three different local alignments tie at the top score of 3. The assumptions is all are equally valid local alignments. Our run randomly picked (9, 5). Running with a fixed seed is would make the pick repeatable.
 
 **Note on the protein test:**
 In our program, mismatches cost the same between letter, of which is not the case for protein where amino acids some are very similar to each other (similar size or chemistry), while others are very different. Real tools use substitution matrices like BLOSUM (Blocks Substitution Matrix) or PAM (Point Accepted Mutation) to score how likely one amino acid is to be replaced by another.\
@@ -144,7 +144,7 @@ def smith_waterman(seq1, seq2, match = 1, mismatch = -1, gap = -1, seed = None):
 
     # 2. Set up 2 empty grids
     score_matrix     = zeros of size (len(seq1)+1) x (len(seq2)+1)   # number grid
-    traceback_matrix = zeros of the same size                         # arrow grid (0 = END)
+    traceback_matrix = zeros of the same size                        # direction grid (0 = END)
 
     # 3. Fill every box, row by row, left to right
     #    cal_score hands back the number and the arrow for each box
@@ -170,12 +170,13 @@ def smith_waterman(seq1, seq2, match = 1, mismatch = -1, gap = -1, seed = None):
 ### What went right
 ### What went wrong
 ### Things I still don't understand
+- How substitution matrices like BLOSUM are built and why some amino-acid swaps score higher.
+- How affine gap penalties change the scoring step.
+- Whether a random pick is the best way to handle ties, or whether reporting all tied alignments would be better, or whether and what is the reason random pick is better than in the list of cells with highest score, pick the earliest encounter in the walk. 
 
 ## Appendix (AI usage, citations, etc.)
-**Generative AI version, prompts and justification:**\
-Version: Claude (Anthropic),Claude Opus 5.5 Medium\
-Prompt: "Give me a make-up RNA seq and protein seq for pairwise alignment algo testing. If there are citation, give it"\
-Justification: We wanted to test our algorithm on RNA and protein seq as well. 
+**Generative AI:**\
+We used Claude (Anthropic) to: explain and check our understand of the Smith-Waterman algorithm; suggest the RNA and protein test sequences and cite where it was taken from, or not if just made up.
 
 **Citations**
 Durbin, R., Eddy, S. R., Krogh, A., & Mitchison, G. (1998). Biological Sequence Analysis: Probabilistic Models of Proteins and Nucleic Acids. Cambridge University Press.
