@@ -12,8 +12,7 @@ Our program does this in three steps:
 
 Match score, mismatch penalty, and gap penalty can all be changed.\
 The defaults are match = +1, mismatch = −1, gap = −1.\
-We tested the program on the two example pairs of DNA sequences provided in the notebook. We had also added RNA and protein examples.\
-Note: 
+We tested the program on the two example pairs of DNA sequences provided in the notebook. We had also added RNA and protein examples. For 1 of the example, we added alignment where scores are different to show that our program allows for customizable gap penalties and match/mismatch scores.
 
 ## Pertinent documentation and usage write-up
 ### Requirements
@@ -46,10 +45,11 @@ Setting- Default (Meaning)
 - `score_matrix`: the filled scoring matrix, of size (len(seq1)+1) × (len(seq2)+1)
 
 ### Examples and expected output 
-Below we list examples used for testing, note our results and and if expected output was provided - note whether or not ours match them.\
+Below we list examples used for testing, note whether or not our output is as expected and and if expected output was provided - note whether or not ours match them.\
+
 **Test 1: DNA**
-- Input provided: seq1 = `TACTTAG` vs seq2 = `CACATTAA`
-- Expected output (ours matched it):
+- Input provided: seq1 = `TACTTAG` vs seq2 = `CACATTAA` 
+- Expected output provided (ours matched it):
 ```
 AC-TTA
 ACATTA
@@ -62,15 +62,30 @@ ACATTA
  [0 0 1 0 1 1 2 4 3]
  [0 0 0 0 0 0 1 3 3]]
 ```
-Only one cell has the top score, so the result is the same every run. Score check: 5 matches (+5) and 1 gap (−1) = 4.\
+Only one cell has the top score, so the result is the same every run. 
+- For this test, we added alignment where match/mismatch score equal 2 and gap equal = -2
+=> result here is also as expected: aligned sequences, different score.
 **Test 2: DNA**
-- Input provided: seq3 = `GGGGAAAAAAAAAAAACCCC` vs seq4 = `GGGGAAAAAACCCC`
-- Results: 
+- Input provided: seq3 = `GGGGAAAAAAAAAAAACCCC` vs seq4 = `GGGGAAAAAACCCC` 
+- Results: see notebook, expected. Two different cells tie for the top score of 10. Both are equally valid local alignments. Our run randomly picked (10, 10). Running with a fixed seed is would make the pick repeatable.
+
 **Test 3: RNA**
 - Input (made-up test sequences):seq5 = `AUGGCUAGCA` vs seq6 = `GCUAGCAUGG`
+- Results: see notebook, expected. No ties, only one cell has the top score, so this result is the same on every run. 
 
 **Test 4: Protein example**
 - Input (Durbin et al., Biological Sequence Analysis) :seq7 = `HEAGAWGHEE` vs seq8 = `PAWHEAE`
+- Results: see notebook, three different local alignments tie at the top score of 3. The assumptions is all are equally valid local alignments. Our run randomly picked (10, 10). Running with a fixed seed is would make the pick repeatable.
+
+**Note on the protein test:**
+In our program, mismatches cost the same between letter, of which is not the case for protein where amino acids some are very similar to each other (similar size or chemistry), while others are very different. Real tools use substitution matrices like BLOSUM (Blocks Substitution Matrix) or PAM (Point Accepted Mutation) to score how likely one amino acid is to be replaced by another.\
+seq7 = `HEAGAWGHEE` vs seq8 = `PAWHEAE` are short made-up-style sequences from a textbook. Real proteins are often hundreds of letters long. So our result shows that the code runs correctly, not necessary about whether or not this is a biologically meaningful alignment. 
+
+**Note on overall limitation of our program:**
+- Every gap also costs the same, so for example one long gap costs made out of 3 dashes has the same cost as several short 3 gaps, also 3 dashes; real tools usually charge more to start a gap than to extend it (affine gap penalty), since one long gap is more likely to come from a single event.\
+- Our simple scoring creates many ties, and our code shows only one of them.
+- Unrelated sequences can match a few letters by chance, and our code doesn’t check whether a score is higher than chance would give.
+
 
 ## Pseudocode
 1. Score and direction per cell
