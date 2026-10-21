@@ -15,7 +15,17 @@ We tested the program on the two example pairs of DNA sequences provided in the 
 
 # Documentation and Results
 ### Requirements
+- Python 3 (Python 3.12.4)
+- Jupyter Notebook, we used PyCharm
+- numpy, used for the score and traceback matrices and for the random tie-break
+  
 ### Usage
+Open project05.ipynb in Jupyter and run all cells in order, top to bottom. \
+The notebook is split into:
+Imports: import numpy as np and the move codes END, DIAG, UP, LEFT = 0, 1, 2, 3\
+Core functions: cal_score() scores one cell and records its move, traceback() rebuilds the alignment from the traceback matrix, and smith_waterman() is the main function that fills both matrices, picks the top-scoring cell, and calls traceback().\
+Tests: Test 1 (DNA, provided, plus a custom-scoring run), Test 2 (DNA, provided), Test 3 (RNA), and Test 4 (protein)
+
 ### Project structure
 
 ```
@@ -26,13 +36,13 @@ project05/
 ```
 
 ### Settings
-These are the parameters of `smith_waterman()`:
-Setting- Default (Meaning)
-`seq1`- none (first sequence; its letters label the matrix rows)
-`seq2`- none (second sequence; its letters label the matrix columns)
-`match`- `1` (added on the diagonal when the two letters are the same)
-`mismatch`- `-1` (added on the diagonal when the two letters are different)
-`gap`- `-1` (added for an up or left move, when one sequence gets a gap `-`)
+These are the parameters of `smith_waterman()`:\
+Setting- Default (Meaning)\
+`seq1`- none (first sequence; its letters label the matrix rows)\
+`seq2`- none (second sequence; its letters label the matrix columns)\
+`match`- `1` (added on the diagonal when the two letters are the same)\
+`mismatch`- `-1` (added on the diagonal when the two letters are different)\
+`gap`- `-1` (added for an up or left move, when one sequence gets a gap `-`)\
 `seed`- `None` (random tie-break every run; give a number, e.g. `seed=1`, to repeat the same pick)
 
 ### Output
@@ -43,8 +53,8 @@ Setting- Default (Meaning)
 - `aligned_seq2`: the aligned part of sequence 2, with `-` where it has a gap
 - `score_matrix`: the filled scoring matrix, of size (len(seq1)+1) × (len(seq2)+1)
 
-### Examples and expected output 
-Below we list examples used for testing, note whether or not our output is as expected and if expected output was provided - note whether or not ours match them.\
+### Examples and outputs 
+Below we list examples used for testing, note whether or not our output is as expected and if expected output was provided - note whether or not ours match them.
 
 **Test 1: DNA**
 - Input provided: seq1 = `TACTTAG` vs seq2 = `CACATTAA` 
@@ -176,7 +186,7 @@ The biggest design question was how to handle ties. On test 2, two different cel
 
 **Note on overall limitation of our program:**
 - Every gap also costs the same, so for example one long gap costs made out of 3 dashes has the same cost as several short 3 gaps, also 3 dashes; real tools usually charge more to start a gap than to extend it (affine gap penalty), since one long gap is more likely to come from a single event.\
-- Our simple scoring creates many ties, and our code shows only one of them.
+- Our simple scoring creates many ties, and our code shows only one of them.\
 - Unrelated sequences can match a few letters by chance, and our code doesn’t check whether a score is higher than chance would give.
 
 **Things we still don't understand:**
@@ -186,7 +196,7 @@ The biggest design question was how to handle ties. On test 2, two different cel
 
 # Personal Reflections
 ## Group Leader
-Dhaivat -
+Dhaivat- 
 
 Breaking the problem down before writing any code helped a lot. Before touching `cal_score`, I worked out by hand which two letters each cell compares, and figured out that cell `(i, j)` has to look at `seq1[i-1]` and `seq2[j-1]` because of the extra zero row and column. I prototyped it by scoring a couple of single cells on paper, like `(2, 2)` and `(1, 1)`, and checking them against the expected matrix before writing the loops. When I finally ran the full matrix, it matched the expected output on the first try, which honestly felt great.
 
@@ -206,11 +216,12 @@ I also kept mixing up `i` and `j` with the two sequences in traceback (writing `
 The `>=` choice ended up mattering more than I expected. On test 2, there are two cells tied at 10, and my version always returned `AAAAAACCCC`, while Trang's random pick could return either one. When we compared, I realized my version silently picked one answer without telling the user a tie existed. That's a big reason we went with Trang's approach for the final submission: it finds every tied cell after the fill and reports the tie count, with a `seed` for repeatability.
 
 ## Other members
-Trang - [Trang to fill in]
+Trang -
+Overall, this project feels more relaxed. It was very helpful to talk through and align understanding of the algorithm and pseudo code prior to writing anything. For ties, my first version kept the first top-scoring cell it found (strict >), similar to Trivedi. I changed it to collect every tied cell after the fill and pick one at random, with a seed so a run can be repeated. On the protein test, three alignments tie at 3, so the output can change between runs. We discussed some of the limitation of our program both overall and for protein specifically. A next step for the program would be reporting every tied alignment instead of one, and adding a substitution matrix and affine gap penalties for proteins.
 
 # Generative AI Appendix
 **Generative AI:**\
-We used Claude (Anthropic) to: explain and check our understanding of the Smith-Waterman algorithm; suggest the RNA and protein test sequences and cite where it was taken from, or not if just made up.
+We used Claude (Anthropic) to: explain and check our understanding of the Smith-Waterman algorithm; suggest the RNA and protein test sequences and cite where it was taken from, or not if just made up. 
 
 **Citations**
 Durbin, R., Eddy, S. R., Krogh, A., & Mitchison, G. (1998). Biological Sequence Analysis: Probabilistic Models of Proteins and Nucleic Acids. Cambridge University Press.
