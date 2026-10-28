@@ -61,11 +61,31 @@ Setting- Default (Meaning)\
 ### Distance transformation
 Smith-Waterman gives a **similarity** (bigger means more alike), but NJ needs a **distance** (bigger means more different, 0 for identical). Raw local alignment scores also grow with sequence length.
 
-Checks against the properties of a distance:
-- **Identity** 
-- **Symmetry**
-- **Non-negativity** 
-- **Triangle inequality** 
+We normalize each Smith-Waterman score by the geometric mean of the two self-scores, then convert it to a distance:
+
+```
+similarity(a, b) = SW(a, b) / sqrt( SW(a, a) * SW(b, b) )
+distance(a, b)   = 1 - similarity(a, b)
+```
+- `SW(a, b)` = the raw Smith-Waterman score for the pair (the biggest cell in the grid)
+- `SW(a, a)` = a sequence's score against itself (its best possible score)
+  
+Checks against the properties of a distance, run with `check_distance_properties()` (see project06_TD.ipynb):
+- **Identity:** OK, the diagonal is all 0.
+- **Symmetry:** OK, each distance is written into both halves.
+- **Non-negativity:** OK, negatives are set to 0.
+- **Triangle inequality:** 0 violations out of 8,000 checks.
+
+### Formulas we implemented
+From the starter notebook's Neighbor-Joining Algorithm cell, for n active nodes and distance table D:
+
+```
+Row sum:          r[i]   = sum of D[i][k] over all k
+Q-matrix:         Q[i,j] = (n - 2) * D[i][j] - r[i] - r[j]
+Branch lengths:   d_i    = ( D[i][j] + (r[i] - r[j]) / (n - 2) ) / 2
+                  d_j    = D[i][j] - d_i
+Distance update:  D[k][x] = ( D[i][x] + D[j][x] - D[i][j] ) / 2
+```
 
 ### Output
 `build_distance_matrix()` returns the 20 × 20 distance matrix and the list of sequence names.\
