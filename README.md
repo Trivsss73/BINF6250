@@ -277,9 +277,11 @@ def plot_tree(newick_tree: str): #Provided - no changes
 
 # Successes
 Each of us has successfully been able to produce similar or the same tree using the input data. We successfully implemented the Smith Waterman scoring algorithm as we learned last week and normalized the scores as required. Each of us used different normalization methods that could actually lead to different results in different contexts, but they work for our current data. We also successfully coded the neighbor joining algorithm using Northeastern computational biology module's neighbor joining example to learn from.
+
 - All three of our versions (Trang's, Ahmed's, and mine) built a working NJ tree from the same FASTA file, and all three gave A:2, B:3 for the first join on the 6x6 example from the class tutorial, which matched our hand calculation.
-- My version (`project06_DT.ipynb`) reused our Project 05 Smith-Waterman code through a separate `utils.py` file instead of copy-pasting it, and used normalized Hamming distance on the aligned sequences (the p-distance).
-- I tested each cell one at a time with small print checks (20 records, all 229 long, symmetric matrix with a 0 diagonal, 19 commas, no negative branches) before running the whole notebook, which made it easy to see exactly where something broke.
+
+- We tested each cell one at a time with small print checks (20 records, all 229 long, symmetric matrix with a 0 diagonal, 19 commas, no negative branches) before running the whole notebook, which made it easy to see exactly where something broke.
+  
 - We swapped each group member's NJ code with each distance matrix to see what actually changes the tree. All three NJ implementations gave the same tree shape when given the same matrix, so the only thing that changes the tree is the distance method. The main clusters (DM1 and DM2 with P8, JT1 and JT2 with DM3, P4 with P14) showed up with both the Hamming and the score-based distance.
 
 # Struggles
@@ -291,8 +293,6 @@ We struggled at the start to determine what form the code was going to follow. A
 
 **Note on overall limitations of our program:**
 - **Scoring is not built for protein.** As we noted in Project 05, our Smith-Waterman gives every match the same +2 and every mismatch the same −1. Real amino acids are not equally different: some substitutions (like two similar amino acids) are common and mild, others are rare and drastic. A substitution matrix such as BLOSUM62 would score these differently. We kept the uniform scoring because the starter notebook's defaults use it, and because our self-score normalization would still work if we switched.
-
-**Things we still don't understand:**
 
 # Personal Reflections
 ## Group Leader
@@ -321,15 +321,17 @@ I really liked that our individual versions turned out different this time. I we
 I also learned to test my choices instead of just picking them. I was curious about the Feng & Doolittle (1987) approach the assignment points to, so I had Claude write that version and ran both through the distance rules from the Module 06 slides (check_distance_properties()). Feng & Doolittle had 114 triangle-inequality violations and the simple version had none, so we went with the simple one. Both still gave the same tree, so the choice didn’t change our result.
 
 Ahmed Salman: This project was not as complicated as I thought. As expected, learning the math behind the algorithm was key to fully coding it. And thanks to the extra resource the professor provided us, it was actually really easy to learn. Coding it did present some challenges, however. First of all, almost all 3 of us had different plans on how to tackle this project. For example, I decided to use a while loop for my neighbor joining algorithm while Trang decided to use recursion. I also tried to focus on using numpy to do all of the math required on the matrix as it allows me to keep the code short and sweet (with the added bonus of numpy being efficient and therefore my code is fast). That said I could not do certain things on my own and I ended up using AI for help as discussed below in the AI usage section. If you look at our code files, you will notice that we have many different methods to apply the same thing and all of them are equally valid. So we decided to leave them up for everyone to look at. Most of my struggles were centered around the manpulation of the numpy array to be able to apply certain functions to certain columns or rows, or the diagonal when needed. The other two also made a point of creating helper functions to make their code cleaner and easier to read, while I was focused on making the code short in the function itself (in hindsight I probably should have used helper functions).
-# Appendix
+
+## Appendix
 **Generative AI:**\
 Trang Do: I used Claude Opus 5.5 (Anthropic) to help me understand the algorithms after reading the slides and the starter notebook. To test my understanding, I had it generate a small example (a 4-sequence toy dataset) that I worked through by hand: the Smith-Waterman grid, the distance table, and each round of neighbor joining. I also had it explain the Newick format and how to build a Newick string from the finished tree.
 For similarity normalization: I tried two approaches: a simple normalization (score ÷ √(self-score × self-score), then distance = 1 − similarity), and the Feng & Doolittle (1987) approach the assignment points to (correcting for self-scores and shuffled sequences, then −ln). I had Claude wrote code Feng & Doolittle version and then provided the properties of a distance check from our Module 6 slides and had it wrote check_distance_properties(), comapre and then chose (detailed above). 
 
 AI usage: Ahmed Salman - Claude AI (Sonnet 5.5) was used to understand how to use 3 specific functions: np.fill_diagonal, np.stack and the v and h versions, and lastly array.reshape. Prompts used are: "How to prevent array.min from selecting anything in the diagonal of a symmetrical numpy array in python?". This lead to np.fill_diagonal. "How to use np.stack to add a row or column to an existing array?". This lead to np.vstack and np.hstack. np.stack only takes the arrays you feed it without altering it and so it requires the inputs to already be 2d arrays if you are planning on adding them as columns. np.vstack automatically converts 1d arrays to 2d arrays and works on them, allowing me to shorten my code and "skip" a step. For array.reshape I simply pasted the error I kept receiving after trying to run the code. Claude suggested using this which worked similarily to np.vstack and np.hstack but without adding anything, simply converting the current 1d array to a 2d array.
+
 Dhaivat Trivedi: I used Claude Opus 5.5 (Anthropic) mostly as a tutor. Helping me with debug functions and my the logic I applied, other useful in-built functions and methods in numpy libraries that makes things easier. Claude helped me with checking every function cell by cell with test prints. 
 
-Northeastern university AI usage: Ahmed Salman - Claude AI (Sonnet 5.5) was used to understand how to use 3 specific functions: np.fill_diagonal, np.stack and the v and h versions, and lastly array.reshape. Prompts used are: "How to prevent array.min from selecting anything in the diagonal of a symmetrical numpy array in python?". This lead to np.fill_diagonal. "How to use np.stack to add a row or column to an existing array?". This lead to np.vstack and np.hstack. np.stack only takes the arrays you feed it without altering it and so it requires the inputs to already be 2d arrays if you are planning on adding them as columns. np.vstack automatically converts 1d arrays to 2d arrays and works on them, allowing me to shorten my code and "skip" a step. For array.reshape I simply pasted the error I kept receiving after trying to run the code. Claude suggested using this which worked similarily to np.vstack and np.hstack but without adding anything, simply converting the current 1d array to a 2d array.
+
 
 **Citations:**
 
