@@ -34,9 +34,13 @@ Main: reads the sequences, builds the distance matrix, runs NJ, and plots the tr
 ### Project structure
 ```
 project06/
-├── project06.ipynb
-├── lafayette_SARS_RT.fasta
+├── .gitignore
 ├── README.md
+├── project06.ipynb          # final group notebook
+├── project06_TD.ipynb       # Trang's version
+├── project06-Ahmed.ipynb    # Ahmed's version
+├── project06_DT.ipynb       # Dhaivat's version
+└── utils.py                 # Project 05 helpers, used by project06_DT.ipynb
 ```
 
 ### Data
@@ -58,10 +62,10 @@ Setting- Default (Meaning)\
 Smith-Waterman gives a **similarity** (bigger means more alike), but NJ needs a **distance** (bigger means more different, 0 for identical). Raw local alignment scores also grow with sequence length.
 
 Checks against the properties of a distance:
-- **Identity:** 
-- **Symmetry:**
-- **Non-negativity:** 
-- **Triangle inequality:** 
+- **Identity** 
+- **Symmetry**
+- **Non-negativity** 
+- **Triangle inequality** 
 
 ### Output
 `build_distance_matrix()` returns the 20 × 20 distance matrix and the list of sequence names.\
@@ -126,7 +130,6 @@ def raw_smith_waterman(seq1, seq2, match_score=2.0, mismatch_penalty=-1.0, gap_p
     return the biggest number in score_matrix
 ```
 b. Normalized similarity (%) \
-*Note: This is a simple normalization design choice I had picked after compared it with AI provided Feng & Doolittle (1987) approach's code. See notebook for detail but as for reasoning, I added check_distance_properties() using the criterias in the slide (refered in ### Distance transformation section of this README file). The result is saying Feng & Doolittle has Triangle inequality violations where the simple version doesn't so we went with that one. 
 ```
 def smith_waterman(sequence1, sequence2, match_score=2.0, mismatch_penalty=-1.0, gap_penalty=-1.0):
     #1. Raw score for the pair
@@ -168,9 +171,9 @@ def build_distance_matrix(sequences, match_score=2.0, mismatch_penalty=-1.0, gap
 ```
 ## Stage 2: Build the tree
 ```
-def neighbor_joining(distance_matrix, labels, seed=None):
-    
-    #1. Input: 
+def neighbor_joining(distance_matrix, labels, seed=42):
+
+    #1. Input:
     # Make a copy of the distance table so the original stays the same
     D = copy of distance_matrix
     # Set up a random picker with a seed, so ties are broken the same way every run
@@ -179,14 +182,12 @@ def neighbor_joining(distance_matrix, labels, seed=None):
     #2. Initialization:
     # Start with every sequence as its own leaf
     # Keep the names in the same order as the rows of D
+    # Each name is also that node's Newick text (a leaf's text is just its name)
     active = copy of labels
-    # Start an empty tree
-    # Each new node we create will remember the two nodes it joined and their branch lengths
-    T = empty dictionary
     # Count how many nodes are left
     n = number of active
-    
-    #3. Iteration: 
+
+    #3. Iteration:
     # Keep joining pairs until only 2 nodes are left
     while n > 2:
 
@@ -209,13 +210,13 @@ def neighbor_joining(distance_matrix, labels, seed=None):
         d_i = (D[i][j] + (r[i] - r[j]) / (n - 2)) / 2
         d_j = D[i][j] - d_i
 
-        # A negative branch = 0
-        if d_i < 0: d_i = 0
-        if d_j < 0: d_j = 0
+        # A negative branch = 0 (this also turns -0.0 into 0)
+        if d_i <= 0: d_i = 0
+        if d_j <= 0: d_j = 0
 
-        # Make a new node k that joins i and j, and save its two branches in the tree
-        k = new unique name, e.g. "node1"
-        T[k] = [(active[i], d_i), (active[j], d_j)]
+        # Make a new node k that joins i and j
+        # Its name IS its Newick text, written right now (see Stage 3)
+        k = "(" + active[i] + ":" + d_i + "," + active[j] + ":" + d_j + ")"
 
         # Work out the distance from the new node k to every other node x
         for each x that is not i or j:
@@ -230,47 +231,26 @@ def neighbor_joining(distance_matrix, labels, seed=None):
         # One fewer node is left now
         n = n - 1
 
-    #3. Termination: Only 2 nodes are left: connect them with one last branch and write the tree as text
-    return to_newick(T, active[0], active[1], D[0][1])
-```
-## Stage 3: Newick and drawing
-*Note: Trang's version of pseudo code and code is recursive. Do not know which one we ended up using but I put some reasoning in my reflection in term of why I think Ahmed's verison is better. 
-```
-def node_string(T, node):
+    #4. Termination: Only 2 nodes are left: connect them with one last branch and finish the text (see Stage 3)
+    a = active[0]
+    b = active[1]
+    d_ab = D[0][1], or 0 if it is negative
 
-    # If the node is a leaf (not in the tree dictionary), just write its name
-    if node is not in T:
-        return node
-
-    # Otherwise, write each of its two branches as "name:length"
-    # If the other end is also a new node, write that one first (the function calls itself)
-    parts = empty list
-    for each (other_node, length) in T[node]:
-        add  node_string(T, other_node) + ":" + length  to parts
-
-    # Put the two parts in brackets, separated by a comma
-    return "(" + parts joined with "," + ")"
-
-
-def to_newick(T, i, j, d_ij):
-
-    # Make sure i is the new node (swap them if i is a leaf and j is not)
-    if i is not in T and j is in T:
-        swap i and j
+    # Make sure a is a joined node (its text starts with "("); swap them if needed
+    if a does not start with "(" and b does:
+        swap a and b
 
     # If both are leaves, there were only 2 sequences, so write them as a simple pair
-    if i is not in T:
-        return "(" + i + ":" + d_ij + "," + j + ":0);"
+    if a does not start with "(":
+        return "(" + a + ":" + d_ab + "," + b + ":0);"
 
-    # Write the two branches of node i
-    parts = each branch of T[i] written as  node_string(T, other_node) + ":" + length
-
-    # Add the last branch to j as a third item
-    add  node_string(T, j) + ":" + d_ij  to parts
-
-    # Put everything in brackets and end with ";"
-    return "(" + parts joined with "," + ");"
-
+    # Unrooted style: open a's brackets and add b as a THIRD item, then end with ";"
+    inside_a = a without its first and last character
+    return "(" + inside_a + "," + b + ":" + d_ab + ");")
+```
+## Stage 3: Newick and drawing
+*Note: Finalized version's tree is iterative. See reflection for reasoning of this choice.
+```
 def plot_tree(newick_tree: str): #Provided - no changes 
 ```
 
@@ -313,10 +293,9 @@ We ended up submitting Trang's score-based Version, which I think was the right 
 The biggest thing I learned was to check where a difference actually comes from before arguing about it. It looked like our NJ code was the issue, but swapping the pieces showed it was only the distance. I also learned a lot about Git this week, like, I learned from my mistake on a previous project: this time I made sure we did not merge and close the PR, since it has to stay open for grading and keep updating as we push.
 
 ## Other members
-Trang Do: did not see Trivedi version yet, will update and talk about what I learnt from his later. 
-Meeting as a group really helped. We aligned on the math and went through the additional materials together, and we kept communication open all week so we could help each other out.
+Trang Do: Meeting as a group helped. We aligned on the math and went through the additional materials together, and we kept communication open all week so we could help each other out.
 
-I really liked that our individual versions turned out different this time. I went in assuming recursion was the way to build the Newick string, because of the tree’s shape, even though we’d discussed in Project 04’s peer review that Python might discourage recursion for a reason. Ahmed went iterative and got the exact same tree. Recursion is fine for our 20 sequences, but his approach avoids Python’s recursion limit on much bigger or lopsided trees, so I think his is the safer choice.
+I really liked that our individual versions turned out different this time. I went in assuming recursion was the way to build the Newick string, because of the tree’s shape, even though we’d discussed in Project 04’s peer review that Python might discourage recursion for a reason. Ahmed and Trivedi went iterative and got the exact same tree. Recursion is fine for our 20 sequences, but his approach avoids Python’s recursion limit on much bigger or lopsided trees, so I think his is the safer choice.
 
 I also learned to test my choices instead of just picking them. I was curious about the Feng & Doolittle (1987) approach the assignment points to, so I had Claude write that version and ran both through the distance rules from the Module 06 slides (check_distance_properties()). Feng & Doolittle had 114 triangle-inequality violations and the simple version had none, so we went with the simple one. Both still gave the same tree, so the choice didn’t change our result.
 
